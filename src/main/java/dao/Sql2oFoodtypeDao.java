@@ -9,21 +9,21 @@ import org.sql2o.Sql2oException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Sql2oFoodatypeDao implements FoodtypeDao{ //don't forget to shake hands with your interface!
+public class Sql2oFoodtypeDao implements FoodtypeDao{
     private final Sql2o sql2o;
-    public Sql2oFoodtypeDao(Sql2o sql2o){ this.sql2o = sql2o; }
+    public Sql2oFoodtypeDao(Sql2o sql2o){ this.sql2o = sql2o; } //making the sql2o object available everywhere so we can call methods in it
 
     @Override
     public void add(Foodtype foodtype) {
         String sql = "INSERT INTO foodtypes (name) VALUES (:name)";
-        try(Connection con = sql2o.open()){
-            int id = (int) con.createQuery(sql, true)
-                    .bind(foodtype)
-                    .executeUpdate()
-                    .getKey();
-            foodtype.setId(id);
+        try(Connection con = sql2o.open()){ //try to open a connection
+            int id = (int) con.createQuery(sql, true) //make a new variable
+                    .bind(foodtype) //map my argument onto the query, so we can use information from it
+                    .executeUpdate()//run it all
+                    .getKey();//int id is now the row number (row “key”) of db
+            foodtype.setId(id);//update object to set id now from database
         } catch (Sql2oException ex) {
-            System.out.println(ex);
+            System.out.println(ex);// error!
         }
     }
 
@@ -41,8 +41,8 @@ public class Sql2oFoodatypeDao implements FoodtypeDao{ //don't forget to shake h
         String deleteJoin = "DELETE from restaurants_foodtypes WHERE foodtypeid = :foodtypeId";
         try (Connection con = sql2o.open()) {
             con.createQuery(sql)
-                    .addParameter("id", id)
-                    .executeUpdate();
+                    .addParameter("id", id) //key/value pair, key must match above
+                    .executeUpdate();  //fetch an individual item
 
             con.createQuery(deleteJoin)
                     .addParameter("foodtypeId", id)
@@ -75,9 +75,13 @@ public class Sql2oFoodatypeDao implements FoodtypeDao{ //don't forget to shake h
         }
     }
 
+
+
     @Override
     public List<Restaurant> getAllRestaurantsForAFoodtype(int foodtypeId) {
-        List<Restaurant> restaurants = new ArrayList();
+
+        ArrayList<Restaurant> restaurants = new ArrayList<>();
+
         String joinQuery = "SELECT restaurantid FROM restaurants_foodtypes WHERE foodtypeid = :foodtypeId";
 
         try (Connection con = sql2o.open()) {
@@ -95,6 +99,15 @@ public class Sql2oFoodatypeDao implements FoodtypeDao{ //don't forget to shake h
             System.out.println(ex);
         }
         return restaurants;
+    }
+
+    @Override
+    public Foodtype findById(int id) {
+        try(Connection con = sql2o.open()){
+            return con.createQuery("SELECT * FROM foodtypes WHERE id = :id")
+                    .addParameter("id", id)
+                    .executeAndFetchFirst(Foodtype.class);
+        }
     }
 
 }
